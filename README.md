@@ -17,7 +17,7 @@ Software Developer / Staff IT di PT SINERGI SOLUSI DIGITAL (SVO Connect).
 1. Clone repository dan masuk ke folder project:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/mononymperson/mini-helpdesk.git
    cd mini-helpdesk
    ```
 
