@@ -1,0 +1,8 @@
+.git
+.devcontainer
+backend/.env
+frontend/node_modules
+frontend/.next
+**/__pycache__
+*.py[cod]
+*.log
