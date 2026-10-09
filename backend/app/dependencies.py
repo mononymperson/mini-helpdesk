@@ -1,10 +1,12 @@
+from collections.abc import Callable
+
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.security import get_user_id_from_token
 from app.db import get_db
-from app.models import User
+from app.models import Role, User
 
 
 def get_current_user(
@@ -43,3 +45,21 @@ def get_current_user(
         )
 
     return user
+
+
+def require_role(*allowed_roles: Role) -> Callable[[User], User]:
+    """Create a dependency that restricts access to the supplied user roles."""
+
+    def role_guard(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to perform this action",
+            )
+
+        return current_user
+
+    return role_guard
+
+
+admin_required = require_role(Role.ADMIN)

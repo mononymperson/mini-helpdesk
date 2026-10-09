@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.models import Role
 
@@ -22,6 +24,18 @@ class UserResponse(BaseModel):
     email: str
     role: Role
     created_at: datetime
+
+
+class UserCreateRole(str, Enum):
+    AGENT = Role.AGENT.value
+    CUSTOMER = Role.CUSTOMER.value
+
+
+class UserCreateRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    role: UserCreateRole = UserCreateRole.CUSTOMER
 
 
 class MeResponse(UserResponse):
