@@ -1,22 +1,22 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from app.schemas.user import UserResponse
 
 
 class RegisterRequest(BaseModel):
-    business_name: str
-    name: str
-    email: EmailStr
-    password: str
+    business_name: str = Field(min_length=1, max_length=150)
+    name: str = Field(min_length=1, max_length=150)
+    email: EmailStr = Field(min_length=1, max_length=255)
+    password: str = Field(min_length=8)
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(min_length=1, max_length=255)
+    password: str = Field(min_length=1)
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    refresh_token: str = Field(min_length=1)
 
 
 class TokenResponse(BaseModel):

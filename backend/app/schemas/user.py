@@ -2,7 +2,7 @@ from datetime import datetime
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models import Role
 
@@ -32,9 +32,9 @@ class UserCreateRole(str, Enum):
 
 
 class UserCreateRequest(BaseModel):
-    name: str
-    email: EmailStr
-    password: str
+    name: str = Field(min_length=1, max_length=150)
+    email: EmailStr = Field(min_length=1, max_length=255)
+    password: str = Field(min_length=8)
     role: UserCreateRole = UserCreateRole.CUSTOMER
 
 
