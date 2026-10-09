@@ -7,7 +7,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.router import router
+from app.api import router
 from app.schemas.common import ResponseJson
 
 
