@@ -1,7 +1,22 @@
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, func
+from enum import Enum
+
+from sqlalchemy import Column, DateTime, Enum as SqlEnum, ForeignKey, Index, Integer, String, func
 from sqlalchemy.orm import relationship
 
 from app.db import Base
+
+
+class TicketStatus(str, Enum):
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+    CLOSED = "closed"
+
+
+class TicketPriority(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
 class Ticket(Base):
@@ -14,8 +29,16 @@ class Ticket(Base):
     assigned_agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     subject = Column(String(255), nullable=False)
     category = Column(String(100), nullable=False)
-    priority = Column(String(20), default="normal", nullable=False)
-    status = Column(String(20), default="open", nullable=False)
+    priority = Column(
+        SqlEnum(TicketPriority, name="ticket_priority", values_callable=lambda values: [item.value for item in values]),
+        default=TicketPriority.MEDIUM.value,
+        nullable=False,
+    )
+    status = Column(
+        SqlEnum(TicketStatus, name="ticket_status", values_callable=lambda values: [item.value for item in values]),
+        default=TicketStatus.OPEN.value,
+        nullable=False,
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

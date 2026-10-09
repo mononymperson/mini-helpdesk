@@ -75,7 +75,10 @@ def _validation_errors(exc: RequestValidationError) -> dict[str, str]:
                 break
 
         message = str(error.get("msg", "Invalid value"))
-        if error.get("type") == "missing":
+        if error.get("type") == "missing" or (
+            error.get("type") == "string_too_short"
+            and error.get("input") == ""
+        ):
             message = f"{field} is required"
 
         if field not in errors:

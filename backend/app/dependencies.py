@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.security import get_user_id_from_token
 from app.db import get_db
 from app.models import Role, User
+from app.models.ticket import Ticket
 
 
 def get_current_user(
@@ -63,3 +64,22 @@ def require_role(*allowed_roles: Role) -> Callable[[User], User]:
 
 
 admin_required = require_role(Role.ADMIN)
+customer_required = require_role(Role.CUSTOMER)
+ticket_user_required = require_role(Role.ADMIN, Role.AGENT, Role.CUSTOMER)
+
+
+def get_ticket_for_current_user(
+    id: int,
+    current_user: User = Depends(ticket_user_required),
+    db: Session = Depends(get_db),
+) -> Ticket:
+    ticket = db.get(Ticket, id)
+
+    if ticket is None:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    if ticket.business_id != current_user.business_id:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    if current_user.role == Role.CUSTOMER and ticket.customer_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    return ticket
