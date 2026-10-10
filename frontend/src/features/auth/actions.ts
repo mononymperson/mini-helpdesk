@@ -10,7 +10,7 @@ import {
   type RegisterValues,
 } from "@/features/auth/schema";
 import { clearAuthCookies, setAuthCookies } from "@/features/auth/session";
-import type { ActionState } from "@/features/auth/types";
+import type { ActionState } from "@/lib/action-state";
 
 export async function loginAction(values: LoginValues): Promise<ActionState> {
   const parsed = loginSchema.safeParse(values);
