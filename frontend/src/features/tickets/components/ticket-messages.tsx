@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   Item,
@@ -21,43 +23,77 @@ function initials(name: string) {
     .join('')
 }
 
+type DisplayMessage = Message & { pending?: boolean; tempId?: string }
+
 export function TicketMessages({
   messages,
   currentUserId,
 }: {
-  messages: Message[]
+  messages: DisplayMessage[]
   currentUserId: number
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+    requestAnimationFrame(() => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'auto',
+      })
+    })
+  }, [])
+
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: 'smooth',
+    })
+  }, [messages.length])
+
   if (messages.length === 0) {
     return (
-      <p className="py-6 text-sm text-muted-foreground">No messages yet.</p>
+      <div ref={scrollRef} className="h-full">
+        <p className="py-6 text-sm text-muted-foreground">No messages yet.</p>
+      </div>
     )
   }
 
   return (
-    <ItemGroup>
-      {messages.map((message) => (
-        <Item key={message.id} variant={'outline'}>
-          <ItemMedia>
-            <Avatar size="sm">
-              <AvatarFallback>{initials(message.sender.name)}</AvatarFallback>
-            </Avatar>
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>
-              {message.sender_id === currentUserId
-                ? 'You'
-                : message.sender.name}
-            </ItemTitle>
-            <ItemDescription className="line-clamp-none">
-              {message.body}
-            </ItemDescription>
-            <ItemDescription className="text-right text-xs text-muted-foreground mt-3">
-              {formatDateTime(message.created_at)}
-            </ItemDescription>
-          </ItemContent>
-        </Item>
-      ))}
-    </ItemGroup>
+    <div ref={scrollRef} className="h-full">
+      <ItemGroup>
+        {messages.map((message) => (
+          <Item
+            key={message.id || message.tempId}
+            variant={'outline'}
+            className={message.pending ? 'opacity-60' : ''}
+          >
+            <ItemMedia>
+              <Avatar size="sm">
+                <AvatarFallback>
+                  {message.sender?.name ? initials(message.sender.name) : 'U'}
+                </AvatarFallback>
+              </Avatar>
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>
+                {message.sender_id === currentUserId
+                  ? 'You'
+                  : message.sender?.name}
+              </ItemTitle>
+              <ItemDescription className="line-clamp-none">
+                {message.body}
+              </ItemDescription>
+              <ItemDescription className="text-right text-xs text-muted-foreground mt-3">
+                {message.pending ? 'Sending...' : formatDateTime(message.created_at)}
+              </ItemDescription>
+            </ItemContent>
+          </Item>
+        ))}
+      </ItemGroup>
+    </div>
   )
 }

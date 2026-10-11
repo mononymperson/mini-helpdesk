@@ -36,6 +36,12 @@ export function TicketReplyForm({
         rows={3}
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            handleSubmit(e as unknown as React.FormEvent)
+          }
+        }}
       />
       <div className="flex justify-end">
         <Button type="submit" disabled={sending || !body.trim()}>

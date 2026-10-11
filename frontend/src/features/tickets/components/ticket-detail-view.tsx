@@ -43,6 +43,8 @@ export function TicketDetailView({
 }) {
   const [wsConnected, setWsConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [pending, setPending] = useState<(Message & { pending: true; tempId: string })[]>([])
 
   const ticket = useSWR<Ticket>(`/api/tickets/${ticketId}`, fetcher)
   const messages = useSWR<Message[]>(
@@ -71,6 +73,15 @@ export function TicketDetailView({
         const data = JSON.parse(event.data)
         console.log(data)
         if (data.type === 'message.new') {
+          setPending((prev) =>
+            prev.filter(
+              (p) =>
+                !(
+                  p.sender_id === data.data.sender_id &&
+                  p.body === data.data.body
+                ),
+            ),
+          )
           messages.mutate((prev = []) => [...prev, data.data], {
             revalidate: false,
           })
@@ -113,6 +124,26 @@ export function TicketDetailView({
     }
   }, [ticketId, accessToken])
 
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+    requestAnimationFrame(() => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'auto',
+      })
+    })
+  }, [messages.data?.length])
+
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: 'smooth',
+    })
+  }, [pending.length])
+
   if (ticket.isLoading) {
     return (
       <div className={`flex ${HEIGHT} flex-col px-4 lg:px-6`}>
@@ -146,7 +177,7 @@ export function TicketDetailView({
         currentUserId={currentUserId}
         onChanged={() => ticket.mutate()}
       />
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollRef}>
         {messages.isLoading ? (
           <div className="flex flex-col gap-5 py-4">
             {[0, 1, 2].map((index) => (
@@ -165,7 +196,7 @@ export function TicketDetailView({
           </p>
         ) : (
           <TicketMessages
-            messages={messages.data ?? []}
+            messages={[...(messages.data ?? []), ...pending]}
             currentUserId={currentUserId}
           />
         )}
@@ -174,6 +205,20 @@ export function TicketDetailView({
         <TicketReplyForm
           onSend={async (body) => {
             const ws = wsRef.current
+            const tempId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+            setPending((prev) => [
+              ...prev,
+              {
+                id: 0 as unknown as number,
+                ticket_id: ticketId,
+                sender_id: currentUserId,
+                body,
+                created_at: new Date().toISOString(),
+                sender: ticket.data?.customer ?? ({} as any),
+                pending: true,
+                tempId,
+              } as any,
+            ])
             if (ws && ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: 'message.send', body }))
             }
