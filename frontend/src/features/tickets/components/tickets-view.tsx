@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import useSWR from 'swr'
 
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -37,12 +38,29 @@ export function TicketsView({
     fetcher,
   )
   const [priority, setPriority] = useState<TicketPriority | 'all'>('all')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const tickets = data ?? []
-  const filtered =
+  const filteredByPriority =
     priority === 'all'
       ? tickets
       : tickets.filter((ticket) => ticket.priority === priority)
+
+  const filtered = filteredByPriority.filter((ticket) => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return (
+      ticket.subject.toLowerCase().includes(q) ||
+      ticket.id.toString().includes(q) ||
+      ticket.customer?.name?.toLowerCase().includes(q) ||
+      ticket.category?.toLowerCase().includes(q)
+    )
+  })
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   return (
     <div className="px-4 lg:px-6">
@@ -74,9 +92,10 @@ export function TicketsView({
         <div className="flex items-center justify-between gap-4 border-b p-2">
           <Select
             value={priority}
-            onValueChange={(value) =>
+            onValueChange={(value) => {
               setPriority((value ?? 'all') as TicketPriority | 'all')
-            }
+              setPage(1)
+            }}
             items={PRIORITY_FILTER_ITEMS}
           >
             <SelectTrigger>
@@ -89,6 +108,15 @@ export function TicketsView({
               <SelectItem value="high">High</SelectItem>
             </SelectContent>
           </Select>
+          <Input
+            className="w-full max-w-xs"
+            placeholder="Search tickets..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
+          />
         </div>
 
         {isLoading ? (
@@ -106,17 +134,44 @@ export function TicketsView({
             </Button>
           </div>
         ) : (
-          <TicketsTable
-            tickets={filtered}
-            role={role}
-            currentUserId={currentUserId}
-            onChanged={() => mutate()}
-            emptyMessage={
-              priority === 'all'
-                ? 'No tickets yet.'
-                : 'No tickets match this filter.'
-            }
-          />
+          <>
+            <TicketsTable
+              tickets={paged}
+              role={role}
+              currentUserId={currentUserId}
+              onChanged={() => mutate()}
+              emptyMessage={
+                priority === 'all' && !search
+                  ? 'No tickets yet.'
+                  : 'No tickets match this filter.'
+              }
+            />
+            <div className="flex items-center justify-between border-t p-2 text-sm text-muted-foreground">
+              <div>
+                Page {page} of {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
