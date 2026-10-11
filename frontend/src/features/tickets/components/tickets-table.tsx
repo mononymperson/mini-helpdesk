@@ -1,10 +1,8 @@
 'use client'
 
-import { useTransition } from 'react'
-import { toast } from 'sonner'
+import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -18,85 +16,17 @@ import {
   updateTicketStatusAction,
 } from '@/features/tickets/actions'
 import { AssignTicketDialog } from '@/features/tickets/components/assign-ticket-dialog'
-import type { ActionState } from '@/lib/action-state'
+import { TicketActionButton } from '@/features/tickets/components/ticket-action-button'
+import {
+  TICKET_PRIORITY_VARIANT,
+  TICKET_STATUS_LABEL,
+  TICKET_STATUS_VARIANT,
+} from '@/features/tickets/labels'
+import { formatDateTime } from '@/lib/format'
 import type { Role, Ticket } from '@/lib/types'
-
-const PRIORITY_VARIANT = {
-  low: 'outline',
-  medium: 'secondary',
-  high: 'destructive',
-} as const
-
-const STATUS_VARIANT = {
-  open: 'default',
-  in_progress: 'secondary',
-  resolved: 'outline',
-  closed: 'ghost',
-} as const
-
-const STATUS_LABEL = {
-  open: 'Open',
-  in_progress: 'In progress',
-  resolved: 'Resolved',
-  closed: 'Closed',
-} as const
 
 const HEADER_ROW = 'bg-secondary/50 hover:bg-secondary/50'
 const HEADER_CELL = 'text-xs font-medium text-muted-foreground'
-
-function formatDateTime(value: string) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function TicketActionButton({
-  label,
-  pendingLabel,
-  action,
-  successMessage,
-  variant = 'default',
-  onDone,
-}: {
-  label: string
-  pendingLabel: string
-  action: () => Promise<ActionState>
-  successMessage: string
-  variant?: 'default' | 'outline'
-  onDone?: () => void
-}) {
-  const [pending, startTransition] = useTransition()
-
-  function onClick() {
-    startTransition(async () => {
-      const result = await action()
-
-      if (!result.ok) {
-        toast.error(result.message ?? 'Something went wrong')
-        return
-      }
-
-      toast.success(successMessage)
-      onDone?.()
-    })
-  }
-
-  return (
-    <Button size="sm" variant={variant} onClick={onClick} disabled={pending}>
-      {pending ? pendingLabel : label}
-    </Button>
-  )
-}
 
 function TicketRowActions({
   ticket,
@@ -245,22 +175,29 @@ export function TicketsTable({
           ) : (
             tickets.map((ticket) => (
               <TableRow key={ticket.id}>
-                <TableCell className="font-medium">{ticket.subject}</TableCell>
+                <TableCell className="font-medium">
+                  <Link
+                    href={`/tickets/${ticket.id}`}
+                    className="hover:underline"
+                  >
+                    {ticket.subject}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   {ticket.customer?.name ?? `#${ticket.customer_id}`}
                 </TableCell>
                 <TableCell>{ticket.category}</TableCell>
                 <TableCell>
                   <Badge
-                    variant={PRIORITY_VARIANT[ticket.priority]}
+                    variant={TICKET_PRIORITY_VARIANT[ticket.priority]}
                     className="capitalize"
                   >
                     {ticket.priority}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANT[ticket.status]}>
-                    {STATUS_LABEL[ticket.status]}
+                  <Badge variant={TICKET_STATUS_VARIANT[ticket.status]}>
+                    {TICKET_STATUS_LABEL[ticket.status]}
                   </Badge>
                 </TableCell>
                 <TableCell>

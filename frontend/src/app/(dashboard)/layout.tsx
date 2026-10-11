@@ -1,16 +1,16 @@
-import { Suspense, type CSSProperties, type ReactNode } from "react";
+import { Suspense, type CSSProperties, type ReactNode } from 'react'
 
-import { BreadcrumbProvider } from "@/components/breadcrumb-context";
-import { DashboardSidebar } from "@/components/dashboard-sidebar";
-import { SiteHeader } from "@/components/site-header";
+import { BreadcrumbProvider } from '@/components/breadcrumb-context'
+import { DashboardSidebar } from '@/components/dashboard-sidebar'
+import { SiteHeader } from '@/components/site-header'
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
   SidebarInset,
   SidebarProvider,
-} from "@/components/ui/sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/sidebar'
+import { Skeleton } from '@/components/ui/skeleton'
 
 function SidebarSkeleton() {
   return (
@@ -29,20 +29,16 @@ function SidebarSkeleton() {
         </div>
       </SidebarContent>
     </Sidebar>
-  );
+  )
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider
       style={
         {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
         } as CSSProperties
       }
     >
@@ -62,5 +58,5 @@ export default function DashboardLayout({
         </BreadcrumbProvider>
       </SidebarInset>
     </SidebarProvider>
-  );
+  )
 }

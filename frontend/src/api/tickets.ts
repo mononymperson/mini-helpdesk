@@ -1,6 +1,7 @@
 import { apiFetch } from "@/api/client";
 import type {
   ApiResponse,
+  Message,
   Ticket,
   TicketPriority,
   TicketStatus,
@@ -55,5 +56,23 @@ export function updateTicket(
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(payload),
+  });
+}
+
+export function getTicket(
+  id: number,
+  accessToken: string,
+): Promise<ApiResponse<Ticket>> {
+  return apiFetch<Ticket>(`/tickets/${id}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function listMessages(
+  ticketId: number,
+  accessToken: string,
+): Promise<ApiResponse<Message[]>> {
+  return apiFetch<Message[]>(`/tickets/${ticketId}/messages`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 }

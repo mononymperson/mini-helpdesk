@@ -40,3 +40,12 @@ export interface Ticket {
   customer: User;
   assigned_agent: User | null;
 }
+
+export interface Message {
+  id: number;
+  ticket_id: number;
+  sender_id: number;
+  body: string;
+  created_at: string;
+  sender: User;
+}

@@ -13,6 +13,7 @@ from app.models import Role, User
 from app.models.message import Message
 from app.models.ticket import Ticket, TicketStatus
 from app.schemas.common import ResponseJson, ResponseValidationError
+from app.schemas.message import MessageResponse
 from app.schemas.ticket import TicketCreateRequest, TicketResponse, TicketUpdateRequest
 
 
@@ -93,6 +94,27 @@ def get_ticket(
     ticket: Ticket = Depends(get_ticket_for_current_user),
 ) -> ResponseJson[TicketResponse]:
     return ResponseJson(data=ticket, message="Ticket retrieved successfully")
+
+
+@router.get(
+    "/{id}/messages",
+    response_model=ResponseJson[list[MessageResponse]],
+    responses={422: {"model": ResponseValidationError}},
+    openapi_extra={"security": [{"BearerAuth": []}]},
+)
+def list_ticket_messages(
+    ticket: Ticket = Depends(get_ticket_for_current_user),
+    db: Session = Depends(get_db),
+) -> ResponseJson[list[MessageResponse]]:
+    messages = list(
+        db.scalars(
+            select(Message)
+            .where(Message.ticket_id == ticket.id)
+            .order_by(Message.created_at)
+            .options(joinedload(Message.sender))
+        ).all()
+    )
+    return ResponseJson(data=messages, message="Messages retrieved successfully")
 
 
 @router.patch(
