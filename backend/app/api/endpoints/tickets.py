@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
 from app.dependencies import (
@@ -49,7 +49,7 @@ def create_ticket(
     )
     db.add(first_message)
     db.commit()
-    db.refresh(ticket)
+    db.refresh(ticket, ["customer", "assigned_agent"])
     return ResponseJson(data=ticket, message="Ticket created successfully")
 
 
@@ -71,7 +71,15 @@ def list_tickets(
     if ticket_status is not None:
         query = query.where(Ticket.status == ticket_status.value)
 
-    tickets = list(db.scalars(query.order_by(Ticket.updated_at.desc())).all())
+    tickets = list(
+        db.scalars(
+            query.order_by(Ticket.updated_at.desc())
+            .options(
+                joinedload(Ticket.customer),
+                joinedload(Ticket.assigned_agent),
+            )
+        ).all()
+    )
     return ResponseJson(data=tickets, message="Tickets retrieved successfully")
 
 
@@ -103,13 +111,31 @@ def update_ticket(
         if ticket.status != TicketStatus.RESOLVED.value or payload.status != TicketStatus.OPEN:
             raise HTTPException(status_code=403, detail="Customer can only reopen resolved tickets")
         ticket.status = TicketStatus.OPEN.value
+        ticket.assigned_agent_id = None
 
     elif current_user.role == Role.AGENT:
         if payload.assigned_agent_id not in (None, current_user.id):
             raise HTTPException(status_code=403, detail="Agent can only assign tickets to self")
         if payload.assigned_agent_id is not None:
+            if ticket.assigned_agent_id not in (None, current_user.id):
+                raise HTTPException(status_code=409, detail="Ticket is already assigned")
             ticket.assigned_agent_id = current_user.id
+            if ticket.status == TicketStatus.OPEN.value:
+                ticket.status = TicketStatus.IN_PROGRESS.value
         if payload.status is not None:
+            if ticket.assigned_agent_id != current_user.id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only the assigned agent can update the status",
+                )
+            if not (
+                ticket.status == TicketStatus.IN_PROGRESS.value
+                and payload.status == TicketStatus.RESOLVED
+            ) and not (
+                ticket.status == TicketStatus.RESOLVED.value
+                and payload.status == TicketStatus.CLOSED
+            ):
+                raise HTTPException(status_code=403, detail="Invalid status transition")
             ticket.status = payload.status.value
 
     elif current_user.role == Role.ADMIN:
@@ -124,9 +150,19 @@ def update_ticket(
             if agent is None:
                 raise HTTPException(status_code=400, detail="Agent not found in this business")
             ticket.assigned_agent_id = agent.id
+            if ticket.status == TicketStatus.OPEN.value:
+                ticket.status = TicketStatus.IN_PROGRESS.value
         if payload.status is not None:
+            if not (
+                ticket.status == TicketStatus.IN_PROGRESS.value
+                and payload.status == TicketStatus.RESOLVED
+            ) and not (
+                ticket.status == TicketStatus.RESOLVED.value
+                and payload.status == TicketStatus.CLOSED
+            ):
+                raise HTTPException(status_code=403, detail="Invalid status transition")
             ticket.status = payload.status.value
 
     db.commit()
-    db.refresh(ticket)
+    db.refresh(ticket, ["customer", "assigned_agent"])
     return ResponseJson(data=ticket, message="Ticket updated successfully")

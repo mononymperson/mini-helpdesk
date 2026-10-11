@@ -1,5 +1,6 @@
 import { Suspense, type CSSProperties, type ReactNode } from "react";
 
+import { BreadcrumbProvider } from "@/components/breadcrumb-context";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import {
@@ -49,14 +50,16 @@ export default function DashboardLayout({
         <DashboardSidebar />
       </Suspense>
       <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              {children}
+        <BreadcrumbProvider>
+          <SiteHeader />
+          <div className="flex flex-1 flex-col">
+            <div className="@container/main flex flex-1 flex-col gap-2">
+              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                {children}
+              </div>
             </div>
           </div>
-        </div>
+        </BreadcrumbProvider>
       </SidebarInset>
     </SidebarProvider>
   );

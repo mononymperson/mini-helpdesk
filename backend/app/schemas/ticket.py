@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.ticket import TicketPriority, TicketStatus
+from app.schemas.user import UserResponse
 
 
 class TicketCreateRequest(BaseModel):
@@ -30,3 +31,5 @@ class TicketResponse(BaseModel):
     status: TicketStatus
     created_at: datetime
     updated_at: datetime
+    customer: UserResponse
+    assigned_agent: UserResponse | None = None

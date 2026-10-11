@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { SetBreadcrumb } from "@/components/breadcrumb-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireRole } from "@/features/auth/guards";
 import { UsersView } from "@/features/users/components/users-view";
@@ -21,8 +22,16 @@ async function UsersContent() {
 
 export default function UsersPage() {
   return (
-    <Suspense fallback={<UsersSkeleton />}>
-      <UsersContent />
-    </Suspense>
+    <>
+      <SetBreadcrumb
+        items={[
+          { label: "Dashboard", href: "/" },
+          { label: "Users" },
+        ]}
+      />
+      <Suspense fallback={<UsersSkeleton />}>
+        <UsersContent />
+      </Suspense>
+    </>
   );
 }
