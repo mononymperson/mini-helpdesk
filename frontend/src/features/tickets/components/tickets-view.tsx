@@ -33,10 +33,6 @@ export function TicketsView({
   role: Role
   currentUserId: number
 }) {
-  const { data, error, isLoading, isValidating, mutate } = useSWR<Ticket[]>(
-    '/api/tickets',
-    fetcher,
-  )
   const [priority, setPriority] = useState<TicketPriority | 'all'>('all')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
