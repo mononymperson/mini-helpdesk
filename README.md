@@ -42,6 +42,11 @@ Software Developer / Staff IT di PT SINERGI SOLUSI DIGITAL (SVO Connect).
 
    Migration database dijalankan otomatis sebelum backend dimulai.
 
+4. Menjalankan seed di container backend (pastikan container sudah berjalan menggunakan docker compose up)
+   ```bash
+   docker compose exec backend python seed.py
+   ```
+
 ## Environment Variables
 
 Environment variable backend disimpan di `backend/.env`.
@@ -79,9 +84,54 @@ Template environment tersedia di [backend/.env.example](./backend/.env.example).
 
 ## Catatan
 
-- Saat register berhasil, response langsung mengembalikan `access_token` dan `refresh_token`.
-- `business_slug` tidak perlu dikirim saat register karena slug akan digenerate oleh system berdasarkan `business_name`.
+### Fitur Wajib
 
-## Demo Accounts
+### Auth
+- [✓] Register business + admin
+- [✓] Login (access + refresh token)
+- [✓] Refresh token
+- [✓] /me endpoint
+- [✓] Admin bisa bikin agent/customer
 
-[See full demo accounts list](./backend/README-seed.md)
+### Tiket
+- [✓] Customer bikin tiket + pesan pertama
+- [✓] List tiket sesuai peran
+- [✓] Filter by status
+- [✓] Agent self-assign, admin re-assign
+- [✓] Status: open → in_progress → resolved → closed
+- [✓] Customer reopen
+
+### Live Chat
+- [✓] WebSocket per tiket
+- [✓] Riwayat pesan tersimpan
+- [✓] Nama, peran, waktu kirim
+- [✓] Auth WebSocket
+- [✓] Tiket closed gak bisa kirim pesan
+
+### Keputusan teknis
+- Menggunakan FastAPI untuk backend karena ringan dan cocok untuk API-only.
+- Menggunakan PostgreSQL sebagai database utama.
+- Menggunakan SQLAlchemy sebagai ORM untuk memetakan tabel ke objek Python, dan Alembic untuk migrasi database.
+- Menggunakan Pydantic untuk validasi request/response dan serialisasi data, agar input user tervalidasi otomatis.
+- Menggunakan shadcn/ui untuk komponen UI.
+- SWR untuk data fetching.
+- Menggunakan debounce saat filter state berganti
+- Access token dan refresh token disimpan di cookies httpOnly.
+- Saat register berhasil, response langsung mengembalikan access_token dan refresh_token.
+- business_slug tidak perlu dikirim saat register karena slug akan digenerate oleh system berdasarkan business_name
+- Response format konsisten: { data, message, errors }
+- WebSocket connection menggunakan token di query string.
+
+### Trade-off
+- Agent tidak bisa ambil tiket yang sudah in_progress
+- Admin bisa re-assign ticket
+- Saat reopen (resolved → open), assignee menjadi kosong (null)
+
+### Fitur bonus yg belum terimplementasi
+- Unit/integration test backend dengan pytest — hanya test manual di browser.
+- Indikator "sedang mengetik" dan status pesan sudah dibaca. Rencana: menambahkan event pada websocket saat input typing.
+- Badge jumlah pesan belum dibaca di daftar tiket
+- Upload lampiran gambar di chat. Rencana: menggunakan S3 atau local storage.
+- Notifikasi real-time di daftar tiket.
+- Rate limiting di endpoint login. Rencana: menggunakan slowapi dengan limit 5 request/menit per IP.
+- Deploy online (Vercel + Render/Railway)
