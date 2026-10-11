@@ -41,10 +41,11 @@ export function TicketDetailView({
   currentUserId: number
   accessToken?: string
 }) {
-  const [wsConnected, setWsConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [pending, setPending] = useState<(Message & { pending: true; tempId: string })[]>([])
+  const [pending, setPending] = useState<
+    (Message & { pending: true; tempId: string })[]
+  >([])
 
   const ticket = useSWR<Ticket>(`/api/tickets/${ticketId}`, fetcher)
   const messages = useSWR<Message[]>(
@@ -71,7 +72,6 @@ export function TicketDetailView({
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        console.log(data)
         if (data.type === 'message.new') {
           setPending((prev) =>
             prev.filter(
@@ -101,20 +101,18 @@ export function TicketDetailView({
         }
       } catch (e) {
         console.log(e)
-        // ignore
       }
     }
 
     ws.onerror = (e) => {
-      setWsConnected(false)
+      wsRef.current = null
     }
 
     ws.onopen = () => {
-      setWsConnected(true)
       wsRef.current = ws
     }
+
     ws.onclose = () => {
-      setWsConnected(false)
       wsRef.current = null
     }
 
@@ -177,7 +175,7 @@ export function TicketDetailView({
         currentUserId={currentUserId}
         onChanged={() => ticket.mutate()}
       />
-      <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollRef}>
+      <div className="min-h-0 flex-1 pr-3 overflow-y-auto" ref={scrollRef}>
         {messages.isLoading ? (
           <div className="flex flex-col gap-5 py-4">
             {[0, 1, 2].map((index) => (

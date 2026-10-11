@@ -126,12 +126,10 @@ function TicketRowActions({
       )
     }
 
-    return (
-      <span className="text-xs text-muted-foreground">Assigned to you</span>
-    )
+    return <span className="text-xs text-muted-foreground">&mdash;</span>
   }
 
-  return null
+  return <span className="text-xs text-muted-foreground">&mdash;</span>
 }
 
 export function TicketsTable({

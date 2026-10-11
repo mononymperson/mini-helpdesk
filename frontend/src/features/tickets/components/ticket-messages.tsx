@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/item'
 import { formatDateTime } from '@/lib/format'
 import type { Message } from '@/lib/types'
+import { cn } from 'cn'
 
 function initials(name: string) {
   return name
@@ -69,11 +70,23 @@ export function TicketMessages({
           <Item
             key={message.id || message.tempId}
             variant={'outline'}
-            className={message.pending ? 'opacity-60' : ''}
+            className={cn(
+              'w-[fit-content]',
+              'min-w-[200px]',
+              'max-w-[50%]',
+              message.pending ? 'opacity-60' : '',
+              message.sender_id === currentUserId
+                ? 'ml-auto bg-secondary text-secondary-foreground'
+                : 'mr-auto',
+            )}
           >
             <ItemMedia>
               <Avatar size="sm">
-                <AvatarFallback>
+                <AvatarFallback
+                  className={
+                    message.sender_id === currentUserId ? 'bg-white' : ''
+                  }
+                >
                   {message.sender?.name ? initials(message.sender.name) : 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -87,8 +100,10 @@ export function TicketMessages({
               <ItemDescription className="line-clamp-none">
                 {message.body}
               </ItemDescription>
-              <ItemDescription className="text-right text-xs text-muted-foreground mt-3">
-                {message.pending ? 'Sending...' : formatDateTime(message.created_at)}
+              <ItemDescription className="text-right text-[10px] text-muted-foreground mt-3">
+                {message.pending
+                  ? 'Sending...'
+                  : formatDateTime(message.created_at)}
               </ItemDescription>
             </ItemContent>
           </Item>
