@@ -42,25 +42,23 @@ export function TicketsView({
   const [page, setPage] = useState(1)
   const pageSize = 10
 
-  const tickets = data ?? []
+  const { data, error, isLoading, isValidating, mutate } = useSWR(
+    `/api/tickets?${new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+      search: search,
+    }).toString()}`,
+    fetcher,
+  )
+  const tickets = (data as any)?.items ?? []
+  const totalPages = (data as any)?.totalPages ?? 1
+  const total = (data as any)?.total ?? 0
+
   const filteredByPriority =
     priority === 'all'
       ? tickets
-      : tickets.filter((ticket) => ticket.priority === priority)
-
-  const filtered = filteredByPriority.filter((ticket) => {
-    if (!search.trim()) return true
-    const q = search.toLowerCase()
-    return (
-      ticket.subject.toLowerCase().includes(q) ||
-      ticket.id.toString().includes(q) ||
-      ticket.customer?.name?.toLowerCase().includes(q) ||
-      ticket.category?.toLowerCase().includes(q)
-    )
-  })
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize)
+      : tickets.filter((ticket: Ticket) => ticket.priority === priority)
+  const paged = filteredByPriority
 
   return (
     <div className="px-4 lg:px-6">
