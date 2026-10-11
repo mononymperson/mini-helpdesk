@@ -1,47 +1,53 @@
-import { apiFetch } from "@/api/client";
+import { apiFetch } from '@/api/client'
 import type {
   ApiResponse,
   Message,
   Ticket,
   TicketPriority,
   TicketStatus,
-} from "@/lib/types";
+} from '@/lib/types'
 
 export interface CreateTicketRequest {
-  subject: string;
-  category: string;
-  priority: TicketPriority;
-  message: string;
+  subject: string
+  category: string
+  priority: TicketPriority
+  message: string
 }
 
 export interface UpdateTicketRequest {
-  status?: TicketStatus;
-  assigned_agent_id?: number;
+  status?: TicketStatus
+  assigned_agent_id?: number
 }
 
 export function listTickets(
   accessToken: string,
-  status?: TicketStatus,
+  filter?: {
+    page?: number
+    limit?: number
+    search?: string
+    status?: string
+    priority?: string
+  },
 ): Promise<ApiResponse<Ticket[]>> {
-  const query = status ? `?status=${status}` : "";
+  const query = new URLSearchParams(filter as Record<string, string>).toString()
 
-  return apiFetch<Ticket[]>(`/tickets${query}`, {
+  return apiFetch<Ticket[]>(`/tickets?${query}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  })
 }
 
 export function createTicket(
   payload: CreateTicketRequest,
   accessToken: string,
 ): Promise<ApiResponse<Ticket>> {
-  return apiFetch<Ticket>("/tickets", {
-    method: "POST",
+  return apiFetch<Ticket>('/tickets', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(payload),
-  });
+  })
 }
 
 export function updateTicket(
@@ -50,13 +56,13 @@ export function updateTicket(
   accessToken: string,
 ): Promise<ApiResponse<Ticket>> {
   return apiFetch<Ticket>(`/tickets/${id}`, {
-    method: "PATCH",
+    method: 'PATCH',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(payload),
-  });
+  })
 }
 
 export function getTicket(
@@ -65,7 +71,7 @@ export function getTicket(
 ): Promise<ApiResponse<Ticket>> {
   return apiFetch<Ticket>(`/tickets/${id}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  })
 }
 
 export function listMessages(
@@ -74,5 +80,5 @@ export function listMessages(
 ): Promise<ApiResponse<Message[]>> {
   return apiFetch<Message[]>(`/tickets/${ticketId}/messages`, {
     headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  })
 }

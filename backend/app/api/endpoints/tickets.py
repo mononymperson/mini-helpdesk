@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
@@ -11,8 +11,8 @@ from app.dependencies import (
 )
 from app.models import Role, User
 from app.models.message import Message
-from app.models.ticket import Ticket, TicketStatus
-from app.schemas.common import ResponseJson, ResponseValidationError
+from app.models.ticket import Ticket, TicketStatus, TicketPriority
+from app.schemas.common import Pagination, ResponseJson, ResponseWithPagination, ResponseValidationError
 from app.schemas.message import MessageResponse
 from app.schemas.ticket import TicketCreateRequest, TicketResponse, TicketUpdateRequest
 from app.core.ws_manager import manager
@@ -21,6 +21,7 @@ from app.schemas.ws import (
     WSTicketStatusChangedEvent,
 )
 
+import math
 
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -62,12 +63,16 @@ def create_ticket(
 
 @router.get(
     "",
-    response_model=ResponseJson[list[TicketResponse]],
+    response_model=ResponseWithPagination[list[TicketResponse]],
     responses={422: {"model": ResponseValidationError}},
     openapi_extra={"security": [{"BearerAuth": []}]},
 )
 def list_tickets(
-    ticket_status: TicketStatus | None = Query(default=None, alias="status"),
+    limit: int = Query(default=10, ge=1, le=100),
+    page: int = Query(default=1, ge=1),
+    search: str | None = Query(default=None, alias="search"),
+    priority: TicketPriority | str | None = Query(default="all", alias="priority"),
+    status: TicketStatus | str | None = Query(default="all", alias="status"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ResponseJson[list[TicketResponse]]:
@@ -75,19 +80,40 @@ def list_tickets(
 
     if current_user.role == Role.CUSTOMER:
         query = query.where(Ticket.customer_id == current_user.id)
-    if ticket_status is not None:
-        query = query.where(Ticket.status == ticket_status.value)
+    if status is not None and status != "all":
+        query = query.where(Ticket.status == status)
+    if priority is not None and priority != "all":
+        query = query.where(Ticket.priority == priority)
+    if search is not None:
+        query = query.where(Ticket.subject.ilike(f"%{search}%"))
 
-    tickets = list(
-        db.scalars(
-            query.order_by(Ticket.updated_at.desc())
-            .options(
-                joinedload(Ticket.customer),
-                joinedload(Ticket.assigned_agent),
-            )
-        ).all()
+    total_items = db.scalar(
+        select(func.count()).select_from(query.subquery())
     )
-    return ResponseJson(data=tickets, message="Tickets retrieved successfully")
+    current_page = page
+    per_page = limit
+    total_pages = math.ceil(total_items / per_page)
+
+    tickets = list(db.scalars(
+        query.order_by(Ticket.updated_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .options(
+            joinedload(Ticket.customer),
+            joinedload(Ticket.assigned_agent),
+        )
+    ).all())
+
+    return ResponseWithPagination(
+        data=tickets, 
+        message="Tickets retrieved successfully", 
+        pagination=Pagination(
+            current_page=current_page,
+            per_page=per_page,
+            total_pages=total_pages,
+            total_items=total_items,
+        )
+    )
 
 
 @router.get(

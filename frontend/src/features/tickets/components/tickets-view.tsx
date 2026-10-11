@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { ChevronLeft, ChevronRight, PlusIcon } from 'lucide-react'
 import Link from 'next/link'
-import { PlusIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import useSWR from 'swr'
 
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -17,13 +17,22 @@ import {
 import { TicketsTable } from '@/features/tickets/components/tickets-table'
 import { TicketsTableSkeleton } from '@/features/tickets/components/tickets-table-skeleton'
 import { fetcher } from '@/lib/fetcher'
-import type { Role, Ticket, TicketPriority } from '@/lib/types'
+import type { Role, Ticket, TicketPriority, TicketStatus } from '@/lib/types'
+import { useDebounce } from '@/lib/utils'
 
 const PRIORITY_FILTER_ITEMS = {
   all: 'Priority: All',
   low: 'Priority: Low',
   medium: 'Priority: Medium',
   high: 'Priority: High',
+} as const
+
+const STATUS_FILTER_ITEMS = {
+  all: 'Status: All',
+  open: 'Status: Open',
+  in_progress: 'Status: In Progress',
+  resolved: 'Status: Resolved',
+  closed: 'Status: Closed',
 } as const
 
 export function TicketsView({
@@ -33,28 +42,36 @@ export function TicketsView({
   role: Role
   currentUserId: number
 }) {
-  const [priority, setPriority] = useState<TicketPriority | 'all'>('all')
-  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState({
+    priority: 'all',
+    status: 'all',
+    search: '',
+  })
+
+  const debounceFilter = useDebounce(filter)
+
   const [page, setPage] = useState(1)
   const pageSize = 10
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR(
-    `/api/tickets?${new URLSearchParams({
-      page: String(page),
-      pageSize: String(pageSize),
-      search: search,
-    }).toString()}`,
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{
+    items: Ticket[]
+    pagination: {
+      current_page: number
+      per_page: number
+      total_pages: number
+      total_items: number
+    }
+    message: string
+  }>(
+    debounceFilter
+      ? `/api/tickets?${new URLSearchParams({
+          page: String(page),
+          pageSize: String(pageSize),
+          ...debounceFilter,
+        }).toString()}`
+      : null,
     fetcher,
   )
-  const tickets = (data as any)?.items ?? []
-  const totalPages = (data as any)?.totalPages ?? 1
-  const total = (data as any)?.total ?? 0
-
-  const filteredByPriority =
-    priority === 'all'
-      ? tickets
-      : tickets.filter((ticket: Ticket) => ticket.priority === priority)
-  const paged = filteredByPriority
 
   return (
     <div className="px-4 lg:px-6">
@@ -84,30 +101,60 @@ export function TicketsView({
 
       <div className="mt-6 overflow-hidden rounded-lg border">
         <div className="flex items-center justify-between gap-4 border-b p-2">
-          <Select
-            value={priority}
-            onValueChange={(value) => {
-              setPriority((value ?? 'all') as TicketPriority | 'all')
-              setPage(1)
-            }}
-            items={PRIORITY_FILTER_ITEMS}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-3">
+            <Select
+              value={filter.status}
+              onValueChange={(value) => {
+                setFilter((prev) => ({
+                  ...prev,
+                  status: (value ?? 'all') as TicketStatus | 'all',
+                }))
+                setPage(1)
+              }}
+              items={STATUS_FILTER_ITEMS}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_FILTER_ITEMS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={filter.priority}
+              onValueChange={(value) => {
+                setFilter((prev) => ({
+                  ...prev,
+                  priority: (value ?? 'all') as TicketPriority | 'all',
+                }))
+                setPage(1)
+              }}
+              items={PRIORITY_FILTER_ITEMS}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(PRIORITY_FILTER_ITEMS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Input
             className="w-full max-w-xs"
             placeholder="Search tickets..."
-            value={search}
+            value={filter.search}
             onChange={(e) => {
-              setSearch(e.target.value)
+              setFilter((prev) => ({ ...prev, search: e.target.value }))
               setPage(1)
             }}
           />
@@ -130,41 +177,51 @@ export function TicketsView({
         ) : (
           <>
             <TicketsTable
-              tickets={paged}
+              tickets={data?.items ?? []}
               role={role}
               currentUserId={currentUserId}
               onChanged={() => mutate()}
               emptyMessage={
-                priority === 'all' && !search
+                filter.priority === 'all' && !filter.search
                   ? 'No tickets yet.'
                   : 'No tickets match this filter.'
               }
             />
-            <div className="flex items-center justify-between border-t p-2 text-sm text-muted-foreground">
-              <div>
-                Page {page} of {totalPages}
+            {data?.pagination.total_pages ? (
+              <div className="flex items-center justify-between border-t p-2 text-sm text-muted-foreground">
+                <div>
+                  Page {data?.pagination.current_page ?? 1} of{' '}
+                  {data?.pagination.total_pages ?? 1}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      (data?.pagination?.current_page ?? 1) >=
+                      (data?.pagination.total_pages ?? 1)
+                    }
+                    onClick={() =>
+                      setPage((p) =>
+                        Math.min(data?.pagination.total_pages ?? 1, p + 1),
+                      )
+                    }
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            ) : null}
           </>
         )}
       </div>

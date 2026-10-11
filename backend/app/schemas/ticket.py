@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.ticket import TicketPriority, TicketStatus
+from app.schemas.common import Pagination
 from app.schemas.user import UserResponse
 
 
