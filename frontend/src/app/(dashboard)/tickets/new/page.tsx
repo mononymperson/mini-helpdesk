@@ -24,11 +24,11 @@ export default function NewTicketPage() {
     <>
       <SetBreadcrumb
         items={[
-          { label: "Dashboard", href: "/" },
           { label: "Tickets", href: "/tickets" },
           { label: "New ticket" },
         ]}
       />
+
       <Suspense fallback={<NewTicketSkeleton />}>
         <NewTicketContent />
       </Suspense>

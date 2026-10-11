@@ -52,7 +52,7 @@ export function RegisterForm() {
       return
     }
 
-    router.replace('/')
+    router.replace('/tickets')
     router.refresh()
   }
 

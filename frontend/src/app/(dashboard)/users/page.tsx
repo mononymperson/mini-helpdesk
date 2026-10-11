@@ -25,7 +25,6 @@ export default function UsersPage() {
     <>
       <SetBreadcrumb
         items={[
-          { label: "Dashboard", href: "/" },
           { label: "Users" },
         ]}
       />

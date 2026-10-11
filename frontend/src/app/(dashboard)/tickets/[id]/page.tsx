@@ -29,11 +29,11 @@ async function TicketDetailContent({
     <>
       <SetBreadcrumb
         items={[
-          { label: "Dashboard", href: "/" },
           { label: "Tickets", href: "/tickets" },
-          { label: `#${id}` },
+          { label: "Ticket detail" },
         ]}
       />
+
       <TicketDetailView
         ticketId={Number(id)}
         role={user.role}

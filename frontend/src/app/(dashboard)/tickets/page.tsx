@@ -25,7 +25,6 @@ export default function TicketsPage() {
     <>
       <SetBreadcrumb
         items={[
-          { label: "Dashboard", href: "/" },
           { label: "Tickets" },
         ]}
       />
