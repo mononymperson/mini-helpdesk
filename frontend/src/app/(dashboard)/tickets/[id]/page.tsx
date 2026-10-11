@@ -22,6 +22,8 @@ async function TicketDetailContent({
 }) {
   const { id } = await params;
   const user = await requireRole("admin", "agent", "customer");
+  const { getAccessToken } = await import("@/features/auth/session");
+  const accessToken = await getAccessToken();
 
   return (
     <>
@@ -36,6 +38,7 @@ async function TicketDetailContent({
         ticketId={Number(id)}
         role={user.role}
         currentUserId={user.id}
+        accessToken={accessToken}
       />
     </>
   );

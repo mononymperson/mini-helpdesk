@@ -20,8 +20,8 @@ services:
     image: mini-helpdesk-dev
     env_file:
       - ./backend/.env
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
     volumes:
       - ./backend:/app
       - .:/workspace
@@ -35,6 +35,7 @@ services:
     image: mini-helpdesk-dev
     environment:
       BACKEND_URL: http://backend:8000
+      NEXT_PUBLIC_SOCKET_URL: ws://localhost:8000
     ports:
       - "3000:3000"
     volumes:

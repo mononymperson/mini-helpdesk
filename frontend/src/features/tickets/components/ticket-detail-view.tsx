@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import useSWR from 'swr'
 
 import { Button } from '@/components/ui/button'
@@ -33,16 +34,84 @@ export function TicketDetailView({
   ticketId,
   role,
   currentUserId,
+  accessToken,
 }: {
   ticketId: number
   role: Role
   currentUserId: number
+  accessToken?: string
 }) {
+  const [wsConnected, setWsConnected] = useState(false)
+  const wsRef = useRef<WebSocket | null>(null)
+
   const ticket = useSWR<Ticket>(`/api/tickets/${ticketId}`, fetcher)
   const messages = useSWR<Message[]>(
     `/api/tickets/${ticketId}/messages`,
     fetcher,
   )
+
+  useEffect(() => {
+    if (!accessToken) return
+
+    const socketBaseUrl =
+      process.env.NEXT_PUBLIC_SOCKET_URL ??
+      `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.hostname}:8000`
+    const socketUrl = new URL(
+      `/ws/tickets/${ticketId}`,
+      socketBaseUrl.endsWith('/') ? socketBaseUrl : `${socketBaseUrl}/`,
+    )
+    socketUrl.searchParams.set('token', accessToken)
+
+    const ws = new WebSocket(socketUrl)
+
+    wsRef.current = ws
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        console.log(data)
+        if (data.type === 'message.new') {
+          messages.mutate((prev = []) => [...prev, data.data], {
+            revalidate: false,
+          })
+        }
+        if (data.type === 'ticket.status_changed') {
+          ticket.mutate(
+            (prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: data.data.status,
+                    updated_at: data.data.updated_at,
+                  }
+                : prev,
+            { revalidate: false },
+          )
+        }
+      } catch (e) {
+        console.log(e)
+        // ignore
+      }
+    }
+
+    ws.onerror = (e) => {
+      setWsConnected(false)
+    }
+
+    ws.onopen = () => {
+      setWsConnected(true)
+      wsRef.current = ws
+    }
+    ws.onclose = () => {
+      setWsConnected(false)
+      wsRef.current = null
+    }
+
+    return () => {
+      ws.close()
+      wsRef.current = null
+    }
+  }, [ticketId, accessToken])
 
   if (ticket.isLoading) {
     return (
@@ -101,7 +170,16 @@ export function TicketDetailView({
           />
         )}
       </div>
-      {canReply(ticket.data, role, currentUserId) && <TicketReplyForm />}
+      {canReply(ticket.data, role, currentUserId) && (
+        <TicketReplyForm
+          onSend={async (body) => {
+            const ws = wsRef.current
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'message.send', body }))
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

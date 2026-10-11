@@ -1,6 +1,14 @@
 'use client'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item'
 import { formatDateTime } from '@/lib/format'
 import type { Message } from '@/lib/types'
 
@@ -27,26 +35,29 @@ export function TicketMessages({
   }
 
   return (
-    <div className="flex flex-col gap-5 py-4">
+    <ItemGroup>
       {messages.map((message) => (
-        <div key={message.id} className="flex gap-3">
-          <Avatar size="sm">
-            <AvatarFallback>{initials(message.sender.name)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <span className="text-sm font-medium">{message.sender.name}</span>
-              {message.sender_id === currentUserId ? (
-                <span className="text-xs text-muted-foreground">You</span>
-              ) : null}
-              <span className="text-xs text-muted-foreground">
-                {formatDateTime(message.created_at)}
-              </span>
-            </div>
-            <p className="mt-1 text-sm whitespace-pre-wrap">{message.body}</p>
-          </div>
-        </div>
+        <Item key={message.id} variant={'outline'}>
+          <ItemMedia>
+            <Avatar size="sm">
+              <AvatarFallback>{initials(message.sender.name)}</AvatarFallback>
+            </Avatar>
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>
+              {message.sender_id === currentUserId
+                ? 'You'
+                : message.sender.name}
+            </ItemTitle>
+            <ItemDescription className="line-clamp-none">
+              {message.body}
+            </ItemDescription>
+            <ItemDescription className="text-right text-xs text-muted-foreground mt-3">
+              {formatDateTime(message.created_at)}
+            </ItemDescription>
+          </ItemContent>
+        </Item>
       ))}
-    </div>
+    </ItemGroup>
   )
 }

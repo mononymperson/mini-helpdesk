@@ -40,6 +40,13 @@ def create_token_pair(user_id: int) -> tuple[str, str]:
     return access_token, refresh_token
 
 
+def decode_access_token(token: str) -> dict:
+    payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    if payload.get("type") != "access":
+        raise JWTError("Invalid token type")
+    return payload
+
+
 def get_user_id_from_token(token: str, expected_type: str) -> int | None:
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])

@@ -15,6 +15,12 @@ from app.models.ticket import Ticket, TicketStatus
 from app.schemas.common import ResponseJson, ResponseValidationError
 from app.schemas.message import MessageResponse
 from app.schemas.ticket import TicketCreateRequest, TicketResponse, TicketUpdateRequest
+from app.core.ws_manager import manager
+from app.schemas.ws import (
+    WSTicketStatusChangedData,
+    WSTicketStatusChangedEvent,
+)
+
 
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -187,4 +193,26 @@ def update_ticket(
 
     db.commit()
     db.refresh(ticket, ["customer", "assigned_agent"])
+
+    try:
+        event = WSTicketStatusChangedEvent(
+            type="ticket.status_changed",
+            data=WSTicketStatusChangedData(
+                ticket_id=ticket.id,
+                status=ticket.status,
+                updated_at=ticket.updated_at,
+                actor_id=current_user.id,
+            ),
+        )
+        import asyncio
+
+        asyncio.create_task(
+            manager.broadcast(
+                ticket.id,
+                event.model_dump(mode="json"),
+            )
+        )
+    except Exception:
+        pass
+
     return ResponseJson(data=ticket, message="Ticket updated successfully")

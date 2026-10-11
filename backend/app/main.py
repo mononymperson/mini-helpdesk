@@ -8,13 +8,15 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import router
+from app.api.websockets import tickets as ws_tickets
 from app.schemas.common import ResponseJson
 
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Mini Helpdesk API", version="0.1.0")
+app = FastAPI(title="Mini Helpdesk API", version="1.0.0")
 app.include_router(router)
+app.include_router(ws_tickets.router, prefix="/ws")
 
 
 def custom_openapi():
@@ -139,13 +141,3 @@ def health() -> ResponseJson[dict[str, str]]:
     return ResponseJson(data={"status": "ok"}, message="Service is healthy")
 
 
-@app.websocket("/ws/notifications")
-async def notifications(websocket: WebSocket) -> None:
-    await websocket.accept()
-    await websocket.send_json({"type": "connected", "message": "WebSocket connected"})
-    try:
-        while True:
-            message = await websocket.receive_text()
-            await websocket.send_json({"type": "echo", "message": message})
-    except WebSocketDisconnect:
-        pass
