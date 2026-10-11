@@ -47,10 +47,15 @@ export function TicketDetailView({
     (Message & { pending: true; tempId: string })[]
   >([])
 
-  const ticket = useSWR<Ticket>(`/api/tickets/${ticketId}`, fetcher)
+  const ticket = useSWR<Ticket>(`/api/tickets/${ticketId}`, fetcher, {
+    shouldRetryOnError: false,
+  })
   const messages = useSWR<Message[]>(
     `/api/tickets/${ticketId}/messages`,
     fetcher,
+    {
+      shouldRetryOnError: false,
+    },
   )
 
   useEffect(() => {

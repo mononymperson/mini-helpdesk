@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
@@ -55,6 +55,10 @@ export function RegisterForm() {
     router.replace('/tickets')
     router.refresh()
   }
+
+  useEffect(() => {
+    form.reset()
+  }, [])
 
   return (
     <div className="space-y-6">
