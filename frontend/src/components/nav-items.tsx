@@ -1,7 +1,7 @@
-import type { ReactNode } from "react"
-import { HomeIcon, TicketIcon, UsersIcon } from "lucide-react"
+import { TicketIcon, UsersIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 
-import type { Role } from "@/lib/types"
+import type { Role } from '@/lib/types'
 
 export type NavItem = {
   title: string
@@ -11,23 +11,23 @@ export type NavItem = {
 }
 
 const navItems: NavItem[] = [
+  // {
+  //   title: "Home",
+  //   url: "/",
+  //   icon: <HomeIcon />,
+  //   roles: ["admin", "agent", "customer"],
+  // },
   {
-    title: "Home",
-    url: "/",
-    icon: <HomeIcon />,
-    roles: ["admin", "agent", "customer"],
-  },
-  {
-    title: "Tickets",
-    url: "/tickets",
+    title: 'Tickets',
+    url: '/tickets',
     icon: <TicketIcon />,
-    roles: ["admin", "agent", "customer"],
+    roles: ['admin', 'agent', 'customer'],
   },
   {
-    title: "Users",
-    url: "/users",
+    title: 'Users',
+    url: '/users',
     icon: <UsersIcon />,
-    roles: ["admin"],
+    roles: ['admin'],
   },
 ]
 
