@@ -63,3 +63,7 @@ Template environment tersedia di [backend/.env.example](./backend/.env.example).
 
 - Saat register berhasil, response langsung mengembalikan `access_token` dan `refresh_token`.
 - `business_slug` tidak perlu dikirim saat register karena slug akan digenerate oleh system berdasarkan `business_name`.
+
+## Demo Accounts
+
+[See full demo accounts list](./backend/README-seed.md)
